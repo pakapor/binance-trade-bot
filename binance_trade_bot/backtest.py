@@ -4,6 +4,7 @@ from traceback import format_exc
 from typing import Dict
 from sqlalchemy.orm.session import Session
 from binance.client import Client
+from sqlalchemy.sql.sqltypes import Numeric
 
 from .binance_api_manager import BinanceAPIManager, BinanceOrderBalanceManager
 from .binance_stream_manager import BinanceCache, BinanceOrder
@@ -197,8 +198,8 @@ class MockDatabase(Database):
 def backtest(
         start_date: datetime = None,
         end_date: datetime = None,
-        interval=1,
-        yield_interval=100,
+        interval: int = None,
+        yield_interval: int = None,
         start_balances: Dict[str, float] = None,
         starting_coin: str = None,
         config: Config = None,
@@ -246,6 +247,9 @@ def backtest(
     trader.initialize()
 
     yield manager
+
+    interval = interval or config.BACKTEST_INTERVAL
+    yield_interval = yield_interval or config.BACKTEST_YIELD_INTERVAL
 
     n = 1
     try:

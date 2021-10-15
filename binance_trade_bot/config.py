@@ -1,4 +1,5 @@
 import configparser
+from datetime import datetime
 import os
 
 import binance.client
@@ -180,3 +181,15 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
 
         allow_coin_merge = os.environ.get("ALLOW_COIN_MERGE") or config.get(USER_CFG_SECTION, "allow_coin_merge")
         self.ALLOW_COIN_MERGE = str(allow_coin_merge).lower() == 'true'
+
+        backtest_start_date = config.get(USER_CFG_SECTION, "BACKTEST_START_DATE").split('/')
+        self.BACKTEST_START_DATE = datetime(int(backtest_start_date[0]), int(backtest_start_date[1]), int(backtest_start_date[2]), int(backtest_start_date[3]), int(backtest_start_date[4]))
+
+        backtest_end_date = config.get(USER_CFG_SECTION, "BACKTEST_END_DATE").split('/')
+        self.BACKTEST_END_DATE = datetime(int(backtest_end_date[0]), int(backtest_end_date[1]), int(backtest_end_date[2]), int(backtest_end_date[3]), int(backtest_end_date[4]))
+
+        backtest_interval = os.environ.get("BACKTEST_INTERVAL") or config.get(USER_CFG_SECTION, "backtest_interval")
+        self.BACKTEST_INTERVAL = int(backtest_interval)
+
+        backtest_yield_interval = os.environ.get("BACKTEST_YIELD_INTERVAL") or config.get(USER_CFG_SECTION, "backtest_yield_interval")
+        self.BACKTEST_YIELD_INTERVAL = int(backtest_yield_interval)
