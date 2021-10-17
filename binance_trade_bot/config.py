@@ -1,6 +1,7 @@
 import configparser
 from datetime import datetime
 import os
+import json
 
 import binance.client
 
@@ -187,6 +188,8 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
 
         backtest_end_date = config.get(USER_CFG_SECTION, "BACKTEST_END_DATE").split('/')
         self.BACKTEST_END_DATE = datetime(int(backtest_end_date[0]), int(backtest_end_date[1]), int(backtest_end_date[2]), int(backtest_end_date[3]), int(backtest_end_date[4]))
+
+        self.STRATEGY_CONFIG = json.loads(config.get(USER_CFG_SECTION, "STRATEGY_CONFIG"))
 
         backtest_interval = os.environ.get("BACKTEST_INTERVAL") or config.get(USER_CFG_SECTION, "backtest_interval")
         self.BACKTEST_INTERVAL = int(backtest_interval)

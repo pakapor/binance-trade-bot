@@ -247,6 +247,10 @@ class BinanceAPIManager:
 
         return price
 
+    def get_ticker_price_in_range(self, ticker_symbol: str, start_date: datetime, end_date: datetime):
+        # TODO:
+        return None
+
     def get_ask_price(self, ticker_symbol: str):
         """
         Get best ask price of a specific coin

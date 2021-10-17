@@ -1,6 +1,9 @@
 import random
 import sys
-from datetime import datetime
+from pandas_ta.overlap import ema
+from pandas_ta.utils import get_offset, verify_series
+import pandas as pd
+from datetime import timedelta
 
 from binance_trade_bot.auto_trader import AutoTrader
 from binance_trade_bot.models.coin import Coin
@@ -9,8 +12,24 @@ from binance_trade_bot.models.coin import Coin
 class Strategy(AutoTrader):
     def initialize(self):
         super().initialize()
-        self.initialize_current_coin()
+        # self.initialize_current_coin()
         self.target_coin = Coin(self.config.SUPPORTED_COIN_LIST[0])
+        
+        self.config_fast_ema = self.config.STRATEGY_CONFIG["fast_ema_period"]
+        self.config_slow_ema = self.config.STRATEGY_CONFIG["slow_ema_period"]
+        self.config_time_frame = self.config.STRATEGY_CONFIG["time_frame"]
+        if self.config_time_frame == "min":
+            self.multiplier = 1
+        elif self.config_time_frame == "hr":
+            self.multiplier = 60
+        elif self.config_time_frame == "4hr":
+            self.multiplier = 60*4
+        elif self.config_time_frame == "day":
+            self.multiplier = 60*24
+        elif self.config_time_frame == "week":
+            self.multiplier = 60*24*7
+        elif self.config_time_frame == "month":
+            self.multiplier = 60*24*30
 
     def scout(self):
         """
@@ -20,35 +39,50 @@ class Strategy(AutoTrader):
         # if self.failed_buy_order:
         #     self.bridge_scout()
 
+        fast_ema, slow_ema, current_price = self.get_coin_ema(self.target_coin.symbol)
+        signal = self.get_signal(current_price, fast_ema, slow_ema)
+
         current_coin = self.db.get_current_coin()
-        # Display on the console, the current coin+Bridge, so users can see *some* activity and not think the bot has
-        # stopped. Not logging though to reduce log size.
-        # print(
-        #     f"{datetime.now()} - CONSOLE - INFO - I am scouting the best trades. "
-        #     f"Current coin: {current_coin + self.config.BRIDGE} ",
-        #     end="\r",
-        # )
-
-        # current_coin_price = self.manager.get_sell_price(current_coin + self.config.BRIDGE)
-
-        # if current_coin_price is None:
-        #     self.logger.info("Skipping scouting... current coin {} not found".format(current_coin + self.config.BRIDGE))
-        #     return
-
-        # self._jump_to_best_coin(current_coin, current_coin_price)
-        # print("current_coin:", current_coin.symbol)
-        # print("SUPPORTED_COIN_LIST[0]:", self.target_coin)
-        rand = int(random.random()*10)
-        # # print("rand:", rand, "\r")
-        # print("current_coin:", current_coin.symbol, ", rand:", rand, ", :bridge:",
-        #       self.config.BRIDGE.symbol, ", token:", self.target_coin)
-        if rand == 1 and current_coin.symbol == self.config.BRIDGE.symbol:
-            # print("buy:", self.target_coin)
+        if signal == "buy" and current_coin.symbol == self.config.BRIDGE.symbol:
+            self.logger.info(f">> signal: {signal}, fast_ema: {fast_ema}, slow_ema: {slow_ema}, current_price: {current_price}")
             self.buy()
 
-        elif rand == 2 and current_coin.symbol == self.target_coin.symbol:
-            # print("sell:", self.target_coin)
+        elif signal == "sell" and current_coin.symbol == self.target_coin.symbol:
+            self.logger.info(f">> signal: {signal}, fast_ema: {fast_ema}, slow_ema: {slow_ema}, current_price: {current_price}")
             self.sell()
+    
+    def get_coin_ema(self, symbol):
+        current_date = self.manager.now()
+        prev_date = current_date - timedelta(minutes=self.config_slow_ema * self.multiplier)
+
+        prev_prices_raw = self.manager.get_ticker_price_in_range(symbol + self.config.BRIDGE_SYMBOL, prev_date, current_date, self.multiplier)
+        if prev_prices_raw is None:
+            return
+
+        prev_prices = pd.DataFrame({"close": prev_prices_raw})
+        current_price = prev_prices_raw[len(prev_prices_raw)-1]
+
+        fast_ema_array = ema(prev_prices["close"], self.config_fast_ema)
+        if fast_ema_array is None:
+            return
+        fast_ema = fast_ema_array[self.config_fast_ema-1]
+
+        slow_ema_array = ema(prev_prices["close"], self.config_slow_ema)
+        if slow_ema_array is None:
+            return
+        slow_ema = slow_ema_array[self.config_slow_ema-1]
+
+        return fast_ema, slow_ema, current_price
+
+    def get_signal(self, current_price, fast_ema, slow_ema):
+        trend = "bull" if fast_ema > slow_ema else "bear"
+        if trend == "bull":
+            signal = "buy" if current_price > fast_ema else "-"
+        elif trend == "bear":
+            signal = "sell" if current_price < fast_ema else "-"
+        else:
+            signal = "-"
+        return signal
 
     def buy(self):
         result = self.manager.buy_alt(self.target_coin, self.config.BRIDGE, self.manager.get_buy_price(
@@ -74,6 +108,7 @@ class Strategy(AutoTrader):
     #         self.db.set_current_coin(new_coin)
 
     def initialize_current_coin(self):
+        return
         """
         Decide what is the current coin, and set it up in the DB.
         """

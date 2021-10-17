@@ -11,7 +11,7 @@ if __name__ == "__main__":
     end_time = config.BACKTEST_END_DATE
     print(f"BACKTEST from {start_time} to {end_time}")
     current_date = start_time.strftime("%d/%m/%Y")
-    
+
     for manager in backtest(start_time, end_time, config.BACKTEST_INTERVAL, config.BACKTEST_YIELD_INTERVAL, None, None, config):
         btc_value = manager.collate_coins("BTC")
         bridge_value = manager.collate_coins(manager.config.BRIDGE.symbol)
@@ -21,7 +21,7 @@ if __name__ == "__main__":
         history.append((btc_value, bridge_value, trades, btc_fees_value, bridge_fees_value))
         btc_diff = round((btc_value - history[0][0]) / history[0][0] * 100, 3)
         bridge_diff = round((bridge_value - history[0][1]) / history[0][1] * 100, 3)
-        if manager.datetime.strftime("%d/%m/%Y") != current_date:
+        if manager.datetime.strftime("%d/%m/%Y") != current_date and False:
             current_date = manager.datetime.strftime("%d/%m/%Y")
             print("------")
             print("TIME:", manager.datetime)

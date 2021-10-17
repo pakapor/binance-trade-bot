@@ -67,7 +67,7 @@ class HistoricKlineCache:
     def __del__(self):
         cache.close()
 
-    def get_historical_klines(self, ticker_symbol: str, start_date: datetime, end_date):
+    def get_historical_klines(self, ticker_symbol: str, start_date: datetime, end_date: datetime, delta = 1):
         data = []
         current_date = start_date
         while current_date <= end_date:
@@ -75,7 +75,7 @@ class HistoricKlineCache:
             if price is not None:
                 data.append(price)
             
-            current_date = current_date + timedelta(minutes=1)
+            current_date = current_date + timedelta(minutes=delta)
 
         return data        
 

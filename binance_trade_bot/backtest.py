@@ -71,6 +71,12 @@ class MockBinanceManager(BinanceAPIManager):
         """
         return self.historic_kline_cache.get_historical_ticker_price(ticker_symbol, self.now())
 
+    def get_ticker_price_in_range(self, ticker_symbol: str, start_date: datetime, end_date: datetime, delta = 1):
+        """
+        Get ticker price of a specific coin and date/time range
+        """
+        return self.historic_kline_cache.get_historical_klines(ticker_symbol, start_date, end_date, delta)
+
     def get_currency_balance(self, currency_symbol: str, force=False):
         """
         Get balance of a specific coin
