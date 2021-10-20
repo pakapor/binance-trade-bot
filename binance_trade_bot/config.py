@@ -183,13 +183,18 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         allow_coin_merge = os.environ.get("ALLOW_COIN_MERGE") or config.get(USER_CFG_SECTION, "allow_coin_merge")
         self.ALLOW_COIN_MERGE = str(allow_coin_merge).lower() == 'true'
 
-        backtest_start_date = config.get(USER_CFG_SECTION, "BACKTEST_START_DATE").split('/')
+        backtest_buy_at_start_str = os.environ.get("BACKTEST_BUY_AT_START") or config.get(USER_CFG_SECTION, "backtest_buy_at_start")
+        self.BACKTEST_BUY_AT_START = str(backtest_buy_at_start_str).lower() == "true"
+
+        self.BACKTEST_START_BALANCES = json.loads(config.get(USER_CFG_SECTION, "backtest_start_balances"))
+
+        backtest_start_date = config.get(USER_CFG_SECTION, "backtest_start_date").split('/')
         self.BACKTEST_START_DATE = datetime(int(backtest_start_date[0]), int(backtest_start_date[1]), int(backtest_start_date[2]), int(backtest_start_date[3]), int(backtest_start_date[4]))
 
-        backtest_end_date = config.get(USER_CFG_SECTION, "BACKTEST_END_DATE").split('/')
+        backtest_end_date = config.get(USER_CFG_SECTION, "backtest_end_date").split('/')
         self.BACKTEST_END_DATE = datetime(int(backtest_end_date[0]), int(backtest_end_date[1]), int(backtest_end_date[2]), int(backtest_end_date[3]), int(backtest_end_date[4]))
 
-        self.STRATEGY_CONFIG = json.loads(config.get(USER_CFG_SECTION, "STRATEGY_CONFIG"))
+        self.STRATEGY_CONFIG = json.loads(config.get(USER_CFG_SECTION, "strategy_config"))
 
         backtest_interval = os.environ.get("BACKTEST_INTERVAL") or config.get(USER_CFG_SECTION, "backtest_interval")
         self.BACKTEST_INTERVAL = int(backtest_interval)

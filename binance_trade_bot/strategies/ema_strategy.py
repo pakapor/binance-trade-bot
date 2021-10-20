@@ -13,7 +13,7 @@ class Strategy(AutoTrader):
     def initialize(self):
         super().initialize()
         # self.initialize_current_coin()
-        self.target_coin = Coin(self.config.SUPPORTED_COIN_LIST[0])
+        self.target_coins = [Coin(coin) for coin in self.config.SUPPORTED_COIN_LIST]
         
         self.config_fast_ema = self.config.STRATEGY_CONFIG["fast_ema_period"]
         self.config_slow_ema = self.config.STRATEGY_CONFIG["slow_ema_period"]
@@ -39,17 +39,18 @@ class Strategy(AutoTrader):
         # if self.failed_buy_order:
         #     self.bridge_scout()
 
-        fast_ema, slow_ema, current_price = self.get_coin_ema(self.target_coin.symbol)
-        signal = self.get_signal(current_price, fast_ema, slow_ema)
+        for coin in self.target_coins:
+            fast_ema, slow_ema, current_price = self.get_coin_ema(coin.symbol)
+            signal = self.get_signal(current_price, fast_ema, slow_ema)
 
-        current_coin = self.db.get_current_coin()
-        if signal == "buy" and current_coin.symbol == self.config.BRIDGE.symbol:
-            self.logger.info(f">> signal: {signal}, fast_ema: {fast_ema}, slow_ema: {slow_ema}, current_price: {current_price}")
-            self.buy()
+            current_coin = self.db.get_current_coin()
+            if signal == "buy" and current_coin.symbol == self.config.BRIDGE.symbol:
+                self.logger.info(f">> signal: {signal}, fast_ema: {fast_ema}, slow_ema: {slow_ema}, current_price: {current_price}")
+                self.buy(coin)
 
-        elif signal == "sell" and current_coin.symbol == self.target_coin.symbol:
-            self.logger.info(f">> signal: {signal}, fast_ema: {fast_ema}, slow_ema: {slow_ema}, current_price: {current_price}")
-            self.sell()
+            elif signal == "sell" and current_coin.symbol == coin.symbol:
+                self.logger.info(f">> signal: {signal}, fast_ema: {fast_ema}, slow_ema: {slow_ema}, current_price: {current_price}")
+                self.sell(coin)
     
     def get_coin_ema(self, symbol):
         current_date = self.manager.now()
@@ -84,15 +85,20 @@ class Strategy(AutoTrader):
             signal = "-"
         return signal
 
-    def buy(self):
-        result = self.manager.buy_alt(self.target_coin, self.config.BRIDGE, self.manager.get_buy_price(
-            self.target_coin + self.config.BRIDGE))
+    def buy(self, coin: Coin):
+        buy_quantity = self.manager._buy_quantity(coin.symbol, self.config.BRIDGE.symbol, self.config.STRATEGY_CONFIG["buy_amount"])
+        result = self.manager.buy_alt(coin, self.config.BRIDGE, self.manager.get_buy_price(
+            coin + self.config.BRIDGE), buy_quantity)
         if result is not None:
-            self.db.set_current_coin(self.target_coin)
+            self.db.set_current_coin(coin)
 
-    def sell(self):
-        result = self.manager.sell_alt(self.target_coin, self.config.BRIDGE, self.manager.get_buy_price(
-            self.config.BRIDGE + self.target_coin))
+    def sell(self, coin: Coin):
+        sell_quantity = self.manager._sell_quantity(coin.symbol, self.config.BRIDGE.symbol)
+        if sell_quantity == 0:
+            return
+
+        result = self.manager.sell_alt(coin, self.config.BRIDGE, self.manager.get_buy_price(
+            self.config.BRIDGE + coin))
         if result is not None:
             self.db.set_current_coin(self.config.BRIDGE)
 

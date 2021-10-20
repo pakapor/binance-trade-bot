@@ -458,8 +458,8 @@ class BinanceAPIManager:
 
         self.retry(self._buy_alt, Coin("BNB", enabled=is_bnb_enabled), target_coin, bnb_price, buy_quantity)
 
-    def buy_alt(self, origin_coin: Coin, target_coin: Coin, buy_price: float) -> BinanceOrder:
-        return self.retry(self._buy_alt, origin_coin, target_coin, buy_price)
+    def buy_alt(self, origin_coin: Coin, target_coin: Coin, buy_price: float, buy_quantity: float=None) -> BinanceOrder:
+        return self.retry(self._buy_alt, origin_coin, target_coin, buy_price, buy_quantity)
 
     def _buy_quantity(
         self, origin_symbol: str, target_symbol: str, target_balance: float = None, from_coin_price: float = None
@@ -546,6 +546,9 @@ class BinanceAPIManager:
 
     def _sell_quantity(self, origin_symbol: str, target_symbol: str, origin_balance: float = None):
         origin_balance = origin_balance or self.get_currency_balance(origin_symbol)
+
+        if origin_balance == 0:
+            return 0
 
         origin_tick = self.get_alt_tick(origin_symbol, target_symbol)
         return math.floor(origin_balance * 10 ** origin_tick) / float(10 ** origin_tick)

@@ -9,10 +9,11 @@ if __name__ == "__main__":
     history = []
     start_time = config.BACKTEST_START_DATE
     end_time = config.BACKTEST_END_DATE
+    start_balances = config.BACKTEST_START_BALANCES or None
     print(f"BACKTEST from {start_time} to {end_time}")
     current_date = start_time.strftime("%d/%m/%Y")
 
-    for manager in backtest(start_time, end_time, config.BACKTEST_INTERVAL, config.BACKTEST_YIELD_INTERVAL, None, None, config):
+    for manager in backtest(start_time, end_time, config.BACKTEST_INTERVAL, config.BACKTEST_YIELD_INTERVAL, start_balances, None, config):
         btc_value = manager.collate_coins("BTC")
         bridge_value = manager.collate_coins(manager.config.BRIDGE.symbol)
         btc_fees_value = manager.collate_fees("BTC")
