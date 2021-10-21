@@ -9,7 +9,7 @@ if __name__ == "__main__":
     history = []
     start_time = config.BACKTEST_START_DATE
     end_time = config.BACKTEST_END_DATE
-    start_balances = config.BACKTEST_START_BALANCES or None
+    start_balances = config.BACKTEST_START_BALANCES.copy() or None
     print(f"BACKTEST from {start_time} to {end_time}")
     current_date = start_time.strftime("%d/%m/%Y")
 
@@ -42,7 +42,12 @@ if __name__ == "__main__":
     #print("PAID FEES:", manager.paid_fees)
     #print("BTC FEES VALUE:", btc_fees_value)
     print(f"{manager.config.BRIDGE.symbol} FEES VALUE:", bridge_fees_value)
-    #print("BALANCES:", manager.balances)
-    print("BTC VALUE:", btc_value, f"({btc_diff}%)")
+    total_start_balance = sum([value for key, value in config.BACKTEST_START_BALANCES.items()])
+    print("START USD BALANCE:", total_start_balance)
+    print("BALANCES:", manager.balances)
+    print("USD BALANCES:", manager.get_usd_balances(manager.balances))
+    # print("BTC VALUE:", btc_value, f"({btc_diff}%)")
+    
+    bridge_diff = round((bridge_value / total_start_balance)*100, 3)
     print(f"{manager.config.BRIDGE.symbol} VALUE:", bridge_value, f"({bridge_diff}%)")
     print("------")

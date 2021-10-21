@@ -41,36 +41,52 @@ class Strategy(AutoTrader):
 
         for coin in self.target_coins:
             fast_ema, slow_ema, current_price = self.get_coin_ema(coin.symbol)
+            if fast_ema is None:
+                continue
+
             signal = self.get_signal(current_price, fast_ema, slow_ema)
 
+            target_coin_balance = self.manager.get_currency_balance(coin.symbol)
+            bridge_coin_balance = self.manager.get_currency_balance(self.config.BRIDGE.symbol)
+            # print("target_coin_balance:", target_coin_balance)
+            # print("bridge_coin_balance:", bridge_coin_balance)
+
+            min_notional = self.manager.get_min_notional(self.config.BRIDGE.symbol, coin.symbol)
+            min_qty = min_notional/current_price
+            # print("min_qty:", min_qty)
+
             current_coin = self.db.get_current_coin()
-            if signal == "buy" and current_coin.symbol == self.config.BRIDGE.symbol:
+            # if signal == "buy" and current_coin.symbol == self.config.BRIDGE.symbol:
+            if signal == "buy" and target_coin_balance <= min_qty and bridge_coin_balance > 0:
                 self.logger.info(f">> signal: {signal}, fast_ema: {fast_ema}, slow_ema: {slow_ema}, current_price: {current_price}")
                 self.buy(coin)
+                self.logger.info(f"current balances: {self.manager.balances}")
 
-            elif signal == "sell" and current_coin.symbol == coin.symbol:
+            # elif signal == "sell" and current_coin.symbol == coin.symbol:
+            elif signal == "sell" and target_coin_balance > min_qty:
                 self.logger.info(f">> signal: {signal}, fast_ema: {fast_ema}, slow_ema: {slow_ema}, current_price: {current_price}")
                 self.sell(coin)
+                self.logger.info(f"current balances: {self.manager.balances}")
     
     def get_coin_ema(self, symbol):
         current_date = self.manager.now()
         prev_date = current_date - timedelta(minutes=self.config_slow_ema * self.multiplier)
 
         prev_prices_raw = self.manager.get_ticker_price_in_range(symbol + self.config.BRIDGE_SYMBOL, prev_date, current_date, self.multiplier)
-        if prev_prices_raw is None:
-            return
+        if prev_prices_raw is None or len(prev_prices_raw) == 0:
+            return None, None, None
 
         prev_prices = pd.DataFrame({"close": prev_prices_raw})
         current_price = prev_prices_raw[len(prev_prices_raw)-1]
 
         fast_ema_array = ema(prev_prices["close"], self.config_fast_ema)
         if fast_ema_array is None:
-            return
+            return None, None, None
         fast_ema = fast_ema_array[self.config_fast_ema-1]
 
         slow_ema_array = ema(prev_prices["close"], self.config_slow_ema)
         if slow_ema_array is None:
-            return
+            return None, None, None
         slow_ema = slow_ema_array[self.config_slow_ema-1]
 
         return fast_ema, slow_ema, current_price

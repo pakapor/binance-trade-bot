@@ -247,6 +247,16 @@ class BinanceAPIManager:
 
         return price
 
+    def get_usd_balances(self, balances: Dict[str, float]):
+        result = {}
+        for token_symbol, balance in balances.items():
+            if token_symbol == self.config.BRIDGE_SYMBOL:
+                result[token_symbol] = balance
+            else:
+                sell_price = self.get_sell_price(token_symbol+self.config.BRIDGE_SYMBOL)
+                result[token_symbol] = balance * sell_price
+        return result
+
     def get_ticker_price_in_range(self, ticker_symbol: str, start_date: datetime, end_date: datetime):
         # TODO:
         return None
