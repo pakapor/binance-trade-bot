@@ -66,7 +66,6 @@ class BinanceOrder:  # pylint: disable=too-few-public-methods
 class BinanceCache:  # pylint: disable=too-few-public-methods
     def __init__(self):
         self.ticker_values: Dict[str, float] = {}
-        self.ticker_values_in_ranage = {}
         self.ticker_values_ask: Dict[str, float] = {}
         self.ticker_values_bid: Dict[str, float] = {}
         self._balances: Dict[str, float] = {}
