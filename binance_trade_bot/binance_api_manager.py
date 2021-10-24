@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import math
 import os
@@ -258,8 +258,28 @@ class BinanceAPIManager:
         return result
 
     def get_ticker_price_in_range(self, ticker_symbol: str, start_date: datetime, end_date: datetime):
-        # TODO:
-        return None
+        
+        price = []
+
+        start_date = start_date.replace(second=0, microsecond=0).strftime("%d %b %Y %H:%M:%S")
+        end_date = end_date.replace(second=0, microsecond=0).strftime("%d %b %Y %H:%M:%S")
+        today = datetime.now().replace(tzinfo=timezone.utc)
+        if end_date > today:
+            end_date = today
+
+        key = ticker_symbol + "::" + start_date.strftime("%m/%d/%Y") + "::" + end_date.strftime("%m/%d/%Y") 
+        data = self.cache.ticker_values_in_ranage.get(key, None)
+        
+        if data is None:
+            data = self.get_historical_klines_from_api(ticker_symbol, "1m", start_date, end_date, limit=1000) #1m = Client.KLINE_INTERVAL_1MINUTE
+            self.cache.ticker_values_in_ranage[key] = data
+
+        for kline in data:
+            kl_date = datetime.utcfromtimestamp(kline[0] / 1000)                
+            kl_price = float(kline[1])                
+            price.append({"date":kl_date, "price":kl_price})
+                
+        return price
 
     def get_ask_price(self, ticker_symbol: str):
         """
