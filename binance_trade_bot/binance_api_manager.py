@@ -271,7 +271,7 @@ class BinanceAPIManager:
         data = self.cache.ticker_values_in_ranage.get(key, None)
         
         if data is None:
-            data = self.get_historical_klines_from_api(ticker_symbol, "1m", start_date, end_date, limit=1000) #1m = Client.KLINE_INTERVAL_1MINUTE
+            data = self.binance_client.get_historical_klines(ticker_symbol, "1m", start_date, end_date, limit=1000) #1m = Client.KLINE_INTERVAL_1MINUTE
             self.cache.ticker_values_in_ranage[key] = data
 
         for kline in data:
