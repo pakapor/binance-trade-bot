@@ -271,15 +271,16 @@ class BinanceAPIManager:
             #return data from cache
             return data
         
-        #generate price data when data is None
+        #generate price data when data is None        
         price = []
-        data = self.binance_client.get_historical_klines(ticker_symbol, "1m", start_date, end_date, limit=1000) #1m = Client.KLINE_INTERVAL_1MINUTE
-        self.cache.ticker_values_in_ranage[key] = data
-
+        data = self.binance_client.get_historical_klines(ticker_symbol, "1m", start_date, end_date, limit=1000) #1m = Client.KLINE_INTERVAL_1MINUTE        
         for kline in data:
             kl_date = datetime.utcfromtimestamp(kline[0] / 1000)                
             kl_price = float(kline[1])                
             price.append({"date":kl_date, "price":kl_price})
+
+        if price and len(price):
+            self.cache.ticker_values_in_ranage[key] = price
         
         return price
 
