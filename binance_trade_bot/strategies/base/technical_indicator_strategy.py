@@ -17,6 +17,9 @@ class TAStrategy(AutoTrader):
         return
 
     def scout(self):
+        self.trigger_by_signal()
+
+    def trigger_by_signal(self):
         current_date = self.manager.now()
 
         for coin in self.target_coins:
@@ -45,14 +48,11 @@ class TAStrategy(AutoTrader):
             min_qty = min_notional/current_price
             # print("min_qty:", min_qty)
 
-            # current_coin = self.db.get_current_coin()
-            # if signal == "buy" and current_coin.symbol == self.config.BRIDGE.symbol:
             if signal == "buy" and target_coin_balance <= min_qty and bridge_coin_balance >= buy_amount and buy_amount >= min_notional:
                 self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, current_price: {current_price}, {signal_info}")
                 self.buy(coin, buy_amount)
                 self.logger.info(f"{current_date} >> current balances: {self.manager.balances}\n")
 
-            # elif signal == "sell" and current_coin.symbol == coin.symbol:
             elif signal == "sell" and target_coin_balance > min_qty:
                 self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, current_price: {current_price}, {signal_info}")
                 self.sell(coin)
@@ -77,6 +77,14 @@ class TAStrategy(AutoTrader):
             self.config.BRIDGE + coin))
         if result is not None:
             self.db.set_current_coin(self.config.BRIDGE)
+
+    def get_prev_prices_in_range(self, pair_symbol, start_date, end_date, range):
+        prev_prices_raw = self.manager.get_ticker_price_in_range(pair_symbol, start_date, end_date, self.multiplier)
+        if prev_prices_raw is None or len(prev_prices_raw) == 0:
+            return None, None
+
+        prev_prices_pd = pd.DataFrame({"close": prev_prices_raw})
+        return prev_prices_raw, prev_prices_pd
 
     def initialize_current_coin(self):
         return
