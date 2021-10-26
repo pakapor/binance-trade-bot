@@ -45,9 +45,11 @@ if __name__ == "__main__":
     total_start_balance = sum([value for key, value in config.BACKTEST_START_BALANCES.items()])
     print("START USD BALANCE:", total_start_balance)
     print("BALANCES:", manager.balances)
-    print("USD BALANCES:", manager.get_usd_balances(manager.balances))
+    current_usd_balance = manager.get_usd_balances(manager.balances)
+    print("USD BALANCES:", current_usd_balance)
     # print("BTC VALUE:", btc_value, f"({btc_diff}%)")
     
+    bridge_value = sum([value for key, value in current_usd_balance.items()])
     bridge_diff = round((bridge_value / total_start_balance)*100, 3)
     print(f"{manager.config.BRIDGE.symbol} VALUE:", bridge_value, f"({bridge_diff}%)")
     print("------")

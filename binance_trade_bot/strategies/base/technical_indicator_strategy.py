@@ -1,0 +1,82 @@
+import random
+import sys
+from pandas_ta.overlap import ema
+from pandas_ta.utils import get_offset, verify_series
+import pandas as pd
+from datetime import timedelta
+
+from binance_trade_bot.auto_trader import AutoTrader
+from binance_trade_bot.models.coin import Coin
+
+
+class TAStrategy(AutoTrader):
+    def initialize(self):
+        super().initialize()
+
+    def initialize(self):
+        return
+
+    def scout(self):
+        current_date = self.manager.now()
+
+        for coin in self.target_coins:
+            signal, signal_info = self.get_signal(coin.symbol)
+            if signal is None:
+                continue
+
+            current_date = self.manager.now()
+            prev_date = current_date - timedelta(minutes=1 * self.multiplier)
+            prev_prices_raw = self.manager.get_ticker_price_in_range(coin.symbol + self.config.BRIDGE_SYMBOL, prev_date, current_date, self.multiplier)
+            current_price = prev_prices_raw[len(prev_prices_raw)-1]
+        
+            target_coin_balance = self.manager.get_currency_balance(coin.symbol)
+            bridge_coin_balance = self.manager.get_currency_balance(self.config.BRIDGE.symbol)
+            buy_percent = self.config.STRATEGY_CONFIG['buy_percent']
+            if buy_percent > 0:
+                # print("target_coin_balance:", target_coin_balance)
+                # print("bridge_coin_balance:", bridge_coin_balance)
+                usd_balance = sum([balance for key, balance in self.manager.get_usd_balances(self.manager.balances).items()])
+                buy_amount = min((buy_percent/100)*usd_balance, bridge_coin_balance)
+                # print("USD Balances:", usd_balance, ", buy amount:", buy_amount, ", Bridge Coin Balance:", bridge_coin_balance)
+            else:
+                buy_amount = min(self.config.STRATEGY_CONFIG['buy_amount'], bridge_coin_balance)
+
+            min_notional = self.manager.get_min_notional(self.config.BRIDGE.symbol, coin.symbol)
+            min_qty = min_notional/current_price
+            # print("min_qty:", min_qty)
+
+            # current_coin = self.db.get_current_coin()
+            # if signal == "buy" and current_coin.symbol == self.config.BRIDGE.symbol:
+            if signal == "buy" and target_coin_balance <= min_qty and bridge_coin_balance >= buy_amount and buy_amount >= min_notional:
+                self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, current_price: {current_price}, {signal_info}")
+                self.buy(coin, buy_amount)
+                self.logger.info(f"{current_date} >> current balances: {self.manager.balances}\n")
+
+            # elif signal == "sell" and current_coin.symbol == coin.symbol:
+            elif signal == "sell" and target_coin_balance > min_qty:
+                self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, current_price: {current_price}, {signal_info}")
+                self.sell(coin)
+                self.logger.info(f"{current_date} >> current balances: {self.manager.balances}\n")
+
+    def get_signal(self, coim_symbol):
+        return "-"
+        
+    def buy(self, coin: Coin, buy_amount):
+        buy_quantity = self.manager._buy_quantity(coin.symbol, self.config.BRIDGE.symbol, buy_amount)
+        result = self.manager.buy_alt(coin, self.config.BRIDGE, self.manager.get_buy_price(
+            coin + self.config.BRIDGE), buy_quantity)
+        if result is not None:
+            self.db.set_current_coin(coin)
+
+    def sell(self, coin: Coin):
+        sell_quantity = self.manager._sell_quantity(coin.symbol, self.config.BRIDGE.symbol)
+        if sell_quantity == 0:
+            return
+
+        result = self.manager.sell_alt(coin, self.config.BRIDGE, self.manager.get_buy_price(
+            self.config.BRIDGE + coin))
+        if result is not None:
+            self.db.set_current_coin(self.config.BRIDGE)
+
+    def initialize_current_coin(self):
+        return

@@ -104,26 +104,45 @@ class MockBinanceManager(BinanceAPIManager):
         if origin_symbol not in self.paid_fees.keys():
             self.paid_fees[origin_symbol] = 0
         self.paid_fees[origin_symbol] += fee
-        if origin_symbol not in self.coins_trades.keys():
-            self.coins_trades[origin_symbol] = []
-        self.coins_trades[origin_symbol].append(self.balances[origin_symbol])
 
-        diff = self.get_diff(origin_symbol)
-        diff_str = ""
-        if diff is None:
+        if self.config.STRATEGY == "ema":
+            if origin_symbol not in self.coins_trades.keys():
+                self.coins_trades[origin_symbol] = []
+            self.coins_trades[origin_symbol].append(paid_amount)
+            diff = None
             diff_str = "None"
+            # diff = self.get_diff2(target_symbol)
+            # diff_str = ""
+            # if diff is None:
+            #     diff_str = "None"
+            # else:
+            #     diff_str = f"{diff} %"
         else:
-            diff_str = f"{diff} %"
+            if origin_symbol not in self.coins_trades.keys():
+                self.coins_trades[origin_symbol] = []
+            self.coins_trades[origin_symbol].append(self.balances[origin_symbol])
 
-        self.logger.info(
-            f"{self.datetime} Bought {round(self.balances[origin_symbol], 4)} {origin_symbol} for {round(paid_amount, 2)} {target_symbol}. Gain: {diff_str}."
-        )
-        
-        if diff is not None:
-            if diff > 0.0:
-                self.positve_coin_jumps +=1
+            diff = self.get_diff(origin_symbol)
+            diff_str = ""
+            if diff is None:
+                diff_str = "None"
+            else:
+                diff_str = f"{diff} %"
+
+            if diff is not None:
+                if diff > 0.0:
+                    self.positve_coin_jumps +=1
             else:
                 self.negative_coin_jumps += 1
+
+        if diff is None:
+            self.logger.info(
+                f"{self.datetime} >> Bought {round(self.balances[origin_symbol], 4)} {origin_symbol} for {round(paid_amount, 2)} {target_symbol}."
+            )
+        else:
+            self.logger.info(
+                f"{self.datetime} >> Bought {round(self.balances[origin_symbol], 4)} {origin_symbol} for {round(paid_amount, 2)} {target_symbol}. Gain: {diff_str}."
+            )
 
         event = defaultdict(
             lambda: None,
@@ -165,15 +184,33 @@ class MockBinanceManager(BinanceAPIManager):
         self.balances[origin_symbol] -= order_quantity
         paid_amount = origin_balance * from_coin_price
 
-        diff = self.get_diff(origin_symbol)
-        diff_str = ""
-        if diff is None:
-            diff_str = "None"
+        if self.config.STRATEGY == "ema":
+            if origin_symbol not in self.coins_trades.keys():
+                self.coins_trades[origin_symbol] = []
+            self.coins_trades[origin_symbol].append(paid_amount)
+
+            diff = self.get_diff(origin_symbol)
+            diff_str = ""
+            if diff is None:
+                diff_str = "None"
+            else:
+                diff_str = f"{diff} %"
+
+            if diff is not None:
+                if diff > 0.0:
+                    self.positve_coin_jumps +=1
+                else:
+                    self.negative_coin_jumps += 1
         else:
-            diff_str = f"{diff} %"
+            diff = self.get_diff(origin_symbol)
+            diff_str = ""
+            if diff is None:
+                diff_str = "None"
+            else:
+                diff_str = f"{diff} %"
 
         self.logger.info(
-            f"{self.datetime} Sold {round(origin_balance, 4)} {origin_symbol} for {paid_amount} {target_symbol}. Gain: {diff_str}."
+            f"{self.datetime} >> Sold {round(origin_balance, 4)} {origin_symbol} for {round(paid_amount, 2)} {target_symbol}. Gain/Loss: {diff_str}."
         )
         
         self.trades += 1
@@ -206,7 +243,10 @@ class MockBinanceManager(BinanceAPIManager):
     def get_diff(self, symbol):
         if len(self.coins_trades[symbol]) == 1:
             return None
-        return round(((self.coins_trades[symbol][-1] - self.coins_trades[symbol][-2]) /self.coins_trades[symbol][-1] * 100 ),2)
+        # print("-1:", self.coins_trades[symbol][-1], ", -2:", self.coins_trades[symbol][-2])
+        current_balance = self.coins_trades[symbol][-1]
+        previous_balance = self.coins_trades[symbol][-2]
+        return round(((current_balance - previous_balance) / previous_balance * 100 ),2)
 
 class MockDatabase(Database):
     def __init__(self, logger: Logger, config: Config):
