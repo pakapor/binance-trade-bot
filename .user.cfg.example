@@ -22,3 +22,13 @@ max_idle_hours=72
 ratio_adjust_weight=500
 auto_adjust_bnb_balance=false
 auto_adjust_bnb_balance_rate=3
+
+backtest_buy_at_start=False
+backtest_start_balances={"BUSD": 1000.0}
+backtest_start_date=2020/1/1/0/0
+backtest_end_date=2021/10/28/0/0
+backtest_interval=1440
+backtest_yield_interval=120
+
+strategy_config={"fast_ema_period":12, "slow_ema_period":26, 
+                 "time_frame":"day", "buy_amount":0, "buy_percent":100}
