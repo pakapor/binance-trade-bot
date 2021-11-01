@@ -24,7 +24,12 @@ class TAStrategy(AutoTrader):
 
         for coin in self.target_coins:
             signal, signal_info = self.get_signal(coin.symbol)
+
             if signal is None:
+                continue
+
+            if signal == '-':
+                # self.logger.info(f"{current_date} >> signal: {signal_info}")
                 continue
 
             current_date = self.manager.now()
