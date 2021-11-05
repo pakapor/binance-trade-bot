@@ -14,6 +14,7 @@ class Strategy(TAStrategy):
     def initialize(self):
         super().initialize()
         self.target_coins = [Coin(coin) for coin in self.config.SUPPORTED_COIN_LIST]
+        self.all_coins =  self.target_coins.copy().append(self.config.BRIDGE.symbol)
         self.config_fast_ema = self.config.STRATEGY_CONFIG["fast_ema_period"]
         self.config_slow_ema = self.config.STRATEGY_CONFIG["slow_ema_period"]
         self.config_time_frame = self.config.STRATEGY_CONFIG["time_frame"]
@@ -56,12 +57,15 @@ class Strategy(TAStrategy):
 
     def get_coin_fast_slow_ema(self, symbol):
         current_date = self.get_current_date()
+        # self.logger.info(f"current_date: {current_date}")
         if self.prev_current_date == current_date:
             return None, None, None, None
 
         self.prev_current_date = current_date
         prev_date_fast = current_date - timedelta(minutes=self.config_fast_ema * self.multiplier)
         prev_date_slow = current_date - timedelta(minutes=self.config_slow_ema * self.multiplier)
+
+        # self.logger.info(f"prev_date_fast: {prev_date_fast}, prev_date_slow: {prev_date_slow}")
 
         fast_ema, prev_prices_raw_fast = self.get_coin_ema_in_range(symbol + self.config.BRIDGE_SYMBOL, prev_date_fast, current_date, self.config_fast_ema)
         if prev_prices_raw_fast is None or len(prev_prices_raw_fast) == 0:
