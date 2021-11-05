@@ -12,6 +12,8 @@ from binance_trade_bot.models.coin import Coin
 class TAStrategy(AutoTrader):
     def initialize(self):
         super().initialize()
+        self.target_coins = [Coin(coin) for coin in self.config.SUPPORTED_COIN_LIST]
+        self.all_coins = [Coin(coin) for coin in self.config.SUPPORTED_COIN_LIST].append(self.config.BRIDGE.symbol)
 
     def initialize(self):
         return
@@ -24,12 +26,13 @@ class TAStrategy(AutoTrader):
 
         for coin in self.target_coins:
             signal, signal_info = self.get_signal(coin.symbol)
+            # self.logger.info(f"{current_date} >> signal: {signal_info}")
 
             if signal is None:
                 continue
 
             if signal == '-':
-                # self.logger.info(f"{current_date} >> signal: {signal_info}")
+                self.logger.info(f"{current_date} >> signal: {signal_info}")
                 continue
 
             current_date = self.manager.now()
@@ -43,7 +46,7 @@ class TAStrategy(AutoTrader):
             if buy_percent > 0:
                 # print("target_coin_balance:", target_coin_balance)
                 # print("bridge_coin_balance:", bridge_coin_balance)
-                usd_balance = sum([balance for key, balance in self.manager.get_usd_balances(self.manager.balances).items()])
+                usd_balance = sum([balance for key, balance in self.manager.get_usd_balances(self.manager.get_balances(self.all_coins)).items()])
                 buy_amount = min((buy_percent/100)*usd_balance, bridge_coin_balance)
                 # print("USD Balances:", usd_balance, ", buy amount:", buy_amount, ", Bridge Coin Balance:", bridge_coin_balance)
             else:
@@ -56,12 +59,12 @@ class TAStrategy(AutoTrader):
             if signal == "buy" and target_coin_balance <= min_qty and bridge_coin_balance >= buy_amount and buy_amount >= min_notional:
                 self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, current_price: {current_price}, {signal_info}")
                 self.buy(coin, buy_amount)
-                self.logger.info(f"{current_date} >> current balances: {self.manager.balances}\n")
+                self.logger.info(f"{current_date} >> current balances: {self.manager.get_balances(self.all_coins)}\n")
 
             elif signal == "sell" and target_coin_balance > min_qty:
                 self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, current_price: {current_price}, {signal_info}")
                 self.sell(coin)
-                self.logger.info(f"{current_date} >> current balances: {self.manager.balances}\n")
+                self.logger.info(f"{current_date} >> current balances: {self.manager.get_balances(self.all_coins)}\n")
 
     def get_signal(self, coim_symbol):
         return "-"
@@ -85,6 +88,7 @@ class TAStrategy(AutoTrader):
 
     def get_prev_prices_in_range(self, pair_symbol, start_date, end_date, range):
         prev_prices_raw = self.manager.get_ticker_price_in_range(pair_symbol, start_date, end_date, self.multiplier)
+        self.logger.info(f"start_date: {start_date}, end_date: {end_date}, prev_prices_raw: {prev_prices_raw}")
         if prev_prices_raw is None or len(prev_prices_raw) == 0:
             return None, None
 

@@ -56,6 +56,9 @@ class MockBinanceManager(BinanceAPIManager):
     def get_min_notional(self, origin_symbol: str, target_symbol: str):
         return 10.0
 
+    def get_balances(self, target_coins):
+        return self.balances
+
     def get_buy_price(self, ticker_symbol: str):
         return self.get_ticker_price(ticker_symbol)
 
