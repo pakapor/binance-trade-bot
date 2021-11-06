@@ -85,12 +85,12 @@ class HistoricKlineCache:
         """
         Get historic ticker price of a specific coin
         """
-        targetCache = (cacheIn if cacheIn else cache)
+        targetCache = (cacheIn if cacheIn != null else cache)
         target_date = date.replace(second=0, microsecond=0).strftime("%d %b %Y %H:%M:%S")
         key = f"{ticker_symbol} - {target_date}"
         val = targetCache.get(key, None)
         if val == "Missing" and not ignoreMissingCache:
-            self.logger.info(f"Cache is missing, ticker_symbol : {ticker_symbol}, date: {date}, cache: {targetCache} ", False)
+            # self.logger.info(f"Cache is missing, ticker_symbol : {ticker_symbol}, date: {date}, cache: {targetCache} ", False)
             return None
         if val is None or val == "Missing":
             end_date = date.replace(second=0, microsecond=0) + timedelta(minutes=1000)

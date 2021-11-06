@@ -29,14 +29,14 @@ class TAStrategy(AutoTrader):
             signal, signal_info = self.get_signal(coin.symbol)
 
             if signal is None:
-                if self.prev_signal[coin.symbol] != signal:
-                    self.logger.info(f"{current_date} >> 'Waiting for the candle to be closed', target_coin: {coin.symbol}")
+                # if self.prev_signal[coin.symbol] != signal:
+                    # self.logger.info(f"{current_date} >> 'Waiting for the candle to be closed', target_coin: {coin.symbol}")
                 self.prev_signal[coin.symbol] = signal
                 continue
 
             if signal == '-':
-                if self.prev_signal[coin.symbol] != signal:
-                    self.logger.info(f"{current_date} >> signal: 'Do Nothing': {signal_info}, target_coin: {coin.symbol}")
+                # if self.prev_signal[coin.symbol] != signal:
+                #     self.logger.info(f"{current_date} >> signal: 'Do Nothing': {signal_info}, target_coin: {coin.symbol}")
                 self.prev_signal[coin.symbol] = signal
                 continue
 
@@ -56,7 +56,7 @@ class TAStrategy(AutoTrader):
                 current_balances = self.manager.get_balances(self.all_coins)
                 usd_balance = sum([balance for key, balance in self.manager.get_usd_balances(current_balances).items()])
                 buy_amount = min((buy_percent/100)*usd_balance, bridge_coin_balance)
-                self.logger.info(f"{current_date} >> Balances, amount: {current_balances}, USD value: {usd_balance}")
+                # self.logger.info(f"{current_date} >> Balances, amount: {current_balances}, USD value: {usd_balance}")
             else:
                 buy_amount = min(self.config.STRATEGY_CONFIG['buy_amount'], bridge_coin_balance)
 
@@ -64,10 +64,13 @@ class TAStrategy(AutoTrader):
             min_qty = min_notional/current_price
             # print("min_qty:", min_qty)
 
-            if signal == "buy" and target_coin_balance <= min_qty and bridge_coin_balance >= buy_amount and buy_amount >= min_notional:
-                self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, current_price: {current_price}, {signal_info}")
-                self.buy(coin, buy_amount)
-                self.logger.info(f"{current_date} >> current balances: {self.manager.get_balances(self.all_coins)}\n")
+            if signal == "buy" and target_coin_balance <= min_qty:
+                if bridge_coin_balance >= buy_amount and buy_amount >= min_notional:
+                    self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, current_price: {current_price}, {signal_info}")
+                    self.buy(coin, buy_amount)
+                    self.logger.info(f"{current_date} >> current balances: {self.manager.get_balances(self.all_coins)}\n")
+                # else:
+                #     self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, 'Not Enought Money!!\n")
 
             elif signal == "sell" and target_coin_balance > min_qty:
                 self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, current_price: {current_price}, {signal_info}")
