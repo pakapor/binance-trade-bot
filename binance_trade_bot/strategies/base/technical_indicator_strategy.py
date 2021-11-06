@@ -89,8 +89,8 @@ class TAStrategy(AutoTrader):
         if sell_quantity == 0:
             return
 
-        result = self.manager.sell_alt(coin, self.config.BRIDGE, self.manager.get_buy_price(
-            self.config.BRIDGE + coin))
+        result = self.manager.sell_alt(coin, self.config.BRIDGE, self.manager.get_sell_price(
+            coin + self.config.BRIDGE))
         if result is not None:
             self.db.set_current_coin(self.config.BRIDGE)
 
