@@ -3,6 +3,8 @@ import io
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
 import requests
+from sqlalchemy.sql.expression import null
+from sqlalchemy.sql.sqltypes import Boolean
 import xmltodict
 import zipfile
 
@@ -79,16 +81,18 @@ class HistoricKlineCache:
 
         return data        
 
-    def get_historical_ticker_price(self, ticker_symbol: str, date: datetime):
+    def get_historical_ticker_price(self, ticker_symbol: str, date: datetime, cacheIn: Cache = null, ignoreMissingCache: Boolean = False):
         """
         Get historic ticker price of a specific coin
         """
+        targetCache = (cacheIn if cacheIn else cache)
         target_date = date.replace(second=0, microsecond=0).strftime("%d %b %Y %H:%M:%S")
         key = f"{ticker_symbol} - {target_date}"
-        val = cache.get(key, None)
-        if val == "Missing":
+        val = targetCache.get(key, None)
+        if val == "Missing" and not ignoreMissingCache:
+            self.logger.info(f"Cache is missing, ticker_symbol : {ticker_symbol}, date: {date}, cache: {targetCache} ", False)
             return None
-        if val is None:
+        if val is None or val == "Missing":
             end_date = date.replace(second=0, microsecond=0) + timedelta(minutes=1000)
             if end_date > datetime.now().replace(tzinfo=timezone.utc):
                 end_date = datetime.now().replace(tzinfo=timezone.utc)
@@ -103,7 +107,7 @@ class HistoricKlineCache:
                         kl_date = datetime.utcfromtimestamp(kline[0] / 1000)
                         kl_datestr = kl_date.strftime("%d %b %Y %H:%M:%S")
                         kl_price = float(kline[1])
-                        cache[f"{ticker_symbol} - {kl_datestr}"] = kl_price
+                        targetCache[f"{ticker_symbol} - {kl_datestr}"] = kl_price
                 except BinanceAPIException as e:
                     if e.code == -1121: # invalid symbol
                         self.get_historical_klines_from_api(ticker_symbol, "1m", target_date, end_date_str, limit=1000)
@@ -111,16 +115,16 @@ class HistoricKlineCache:
                         raise e
             else:
                 self.get_historical_klines_from_api(ticker_symbol, "1m", target_date, end_date_str, limit=1000)
-            val = cache.get(key, None)
+            val = targetCache.get(key, None)
             if val == None:
-                cache.set(key, "Missing")
+                targetCache.set(key, "Missing")
                 current_date = date + timedelta(minutes=1)
                 while current_date <= end_date:
                     current_date_str = current_date.strftime("%d %b %Y %H:%M:%S")
                     current_key = f"{ticker_symbol} - {current_date_str}"
-                    current_val = cache.get(current_key, None)
+                    current_val = targetCache.get(current_key, None)
                     if current_val == None:
-                        cache.set(current_key, "Missing")
+                        targetCache.set(current_key, "Missing")
                     current_date = current_date + timedelta(minutes=1)
             if val == "Missing":
                 val = None
