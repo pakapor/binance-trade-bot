@@ -265,10 +265,10 @@ class BinanceAPIManager:
         return base_fee
 
     def get_balances(self, target_coins):
-        self.logger.info(f"target_coins : {target_coins}")
+        # self.logger.info(f"target_coins : {target_coins}")
         balances = {}
-        for symbol in target_coins:
-            balances[symbol] = self.get_currency_balance(symbol)
+        for coin in target_coins:
+            balances[coin.symbol] = self.get_currency_balance(coin.symbol)
         return balances
 
     def get_account(self):
@@ -323,7 +323,7 @@ class BinanceAPIManager:
         data = []
         current_date = start_date
         while current_date <= end_date:
-            price = self.historic_kline_cache.get_historical_ticker_price(ticker_symbol, current_date)
+            price = self.historic_kline_cache.get_historical_ticker_price(ticker_symbol, current_date, cache, True)
             if price is not None:
                 data.append(price)
             

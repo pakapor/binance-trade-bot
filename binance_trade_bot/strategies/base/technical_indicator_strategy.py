@@ -13,10 +13,11 @@ class TAStrategy(AutoTrader):
     def initialize(self):
         super().initialize()
         self.target_coins = [Coin(coin) for coin in self.config.SUPPORTED_COIN_LIST]
-        self.all_coins = [Coin(coin) for coin in self.config.SUPPORTED_COIN_LIST].append(self.config.BRIDGE.symbol)
-
-    def initialize(self):
-        return
+        self.all_coins = [Coin(coin) for coin in self.config.SUPPORTED_COIN_LIST]
+        self.all_coins.append(self.config.BRIDGE)
+        self.prev_signal = {}
+        for coin in self.target_coins:
+            self.prev_signal[coin.symbol] = 'x'
 
     def scout(self):
         self.trigger_by_signal()
@@ -26,14 +27,20 @@ class TAStrategy(AutoTrader):
 
         for coin in self.target_coins:
             signal, signal_info = self.get_signal(coin.symbol)
-            # self.logger.info(f"{current_date} >> signal: {signal_info}")
 
             if signal is None:
+                if self.prev_signal[coin.symbol] != signal:
+                    self.logger.info(f"{current_date} >> 'Waiting for the candle to be closed', target_coin: {coin.symbol}")
+                self.prev_signal[coin.symbol] = signal
                 continue
 
             if signal == '-':
-                self.logger.info(f"{current_date} >> signal: {signal_info}")
+                if self.prev_signal[coin.symbol] != signal:
+                    self.logger.info(f"{current_date} >> signal: 'Do Nothing': {signal_info}, target_coin: {coin.symbol}")
+                self.prev_signal[coin.symbol] = signal
                 continue
+
+            self.prev_signal[coin.symbol] = signal
 
             current_date = self.manager.now()
             prev_date = current_date - timedelta(minutes=1 * self.multiplier)
@@ -46,13 +53,14 @@ class TAStrategy(AutoTrader):
             if buy_percent > 0:
                 # print("target_coin_balance:", target_coin_balance)
                 # print("bridge_coin_balance:", bridge_coin_balance)
-                usd_balance = sum([balance for key, balance in self.manager.get_usd_balances(self.manager.get_balances(self.all_coins)).items()])
+                current_balances = self.manager.get_balances(self.all_coins)
+                usd_balance = sum([balance for key, balance in self.manager.get_usd_balances(current_balances).items()])
                 buy_amount = min((buy_percent/100)*usd_balance, bridge_coin_balance)
-                # print("USD Balances:", usd_balance, ", buy amount:", buy_amount, ", Bridge Coin Balance:", bridge_coin_balance)
+                self.logger.info(f"{current_date} >> Balances, amount: {current_balances}, USD value: {usd_balance}")
             else:
                 buy_amount = min(self.config.STRATEGY_CONFIG['buy_amount'], bridge_coin_balance)
 
-            min_notional = self.manager.get_min_notional(self.config.BRIDGE.symbol, coin.symbol)
+            min_notional = self.manager.get_min_notional(coin.symbol, self.config.BRIDGE.symbol)
             min_qty = min_notional/current_price
             # print("min_qty:", min_qty)
 
@@ -81,14 +89,14 @@ class TAStrategy(AutoTrader):
         if sell_quantity == 0:
             return
 
-        result = self.manager.sell_alt(coin, self.config.BRIDGE, self.manager.get_buy_price(
-            self.config.BRIDGE + coin))
+        result = self.manager.sell_alt(coin, self.config.BRIDGE, self.manager.get_sell_price(
+            coin + self.config.BRIDGE))
         if result is not None:
             self.db.set_current_coin(self.config.BRIDGE)
 
     def get_prev_prices_in_range(self, pair_symbol, start_date, end_date, range):
         prev_prices_raw = self.manager.get_ticker_price_in_range(pair_symbol, start_date, end_date, self.multiplier)
-        self.logger.info(f"start_date: {start_date}, end_date: {end_date}, prev_prices_raw: {prev_prices_raw}")
+        # self.logger.info(f"start_date: {start_date}, end_date: {end_date}, prev_prices_raw: {prev_prices_raw}")
         if prev_prices_raw is None or len(prev_prices_raw) == 0:
             return None, None
 
