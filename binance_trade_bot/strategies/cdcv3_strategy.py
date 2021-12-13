@@ -26,6 +26,8 @@ class Strategy(TAStrategy):
             self.multiplier = 60*24*7
         elif self.config_time_frame == "month":
             self.multiplier = 60*24*30
+        
+        self.start_delay_seconds = self.config.STRATEGY_CONFIG["start_delay_seconds"]
 
         self.prev_current_date = {}
         for coin in self.target_coins:

@@ -65,6 +65,9 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         self.SCOUT_SLEEP_TIME = int(
             os.environ.get("SCOUT_SLEEP_TIME") or config.get(USER_CFG_SECTION, "scout_sleep_time")
         )
+        self.SLEEP_TIME = int(
+            os.environ.get("SLEEP_TIME") or config.get(USER_CFG_SECTION, "sleep_time")
+        )
 
         # Get config for binance
         self.BINANCE_API_KEY = os.environ.get("API_KEY") or config.get(USER_CFG_SECTION, "api_key")

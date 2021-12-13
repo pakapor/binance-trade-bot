@@ -60,9 +60,9 @@ def main():
 
     schedule = SafeScheduler(logger)
     schedule.every(config.SCOUT_SLEEP_TIME).seconds.do(trader.scout).tag("scouting")
-    schedule.every(1).minutes.do(trader.update_values).tag("updating value history")
-    schedule.every(1).minutes.do(db.prune_scout_history).tag("pruning scout history")
-    schedule.every(1).hours.do(db.prune_value_history).tag("pruning value history")
+    schedule.every(config.SLEEP_TIME/60).minutes.do(trader.update_values).tag("updating value history")
+    schedule.every(config.SLEEP_TIME/60).minutes.do(db.prune_scout_history).tag("pruning scout history")
+    schedule.every(config.SLEEP_TIME/3600).hours.do(db.prune_value_history).tag("pruning value history")
     try:
         while True:
             schedule.run_pending()
