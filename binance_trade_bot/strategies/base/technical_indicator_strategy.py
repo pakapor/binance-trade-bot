@@ -29,14 +29,14 @@ class TAStrategy(AutoTrader):
             signal, signal_info = self.get_signal(coin.symbol)
 
             if signal is None:
-                # if self.prev_signal[coin.symbol] != signal:
-                    # self.logger.info(f"{current_date} >> 'Waiting for the candle to be closed', target_coin: {coin.symbol}")
+                if self.prev_signal[coin.symbol] != signal:
+                    self.logger.info(f"{current_date} >> 'Waiting for the candle to be closed', target_coin: {coin.symbol}")
                 self.prev_signal[coin.symbol] = signal
                 continue
 
             if signal == '-':
-                # if self.prev_signal[coin.symbol] != signal:
-                #     self.logger.info(f"{current_date} >> signal: 'Do Nothing': {signal_info}, target_coin: {coin.symbol}")
+                if self.prev_signal[coin.symbol] != signal:
+                    self.logger.info(f"{current_date} >> signal: 'Do Nothing': {signal_info}, target_coin: {coin.symbol}")
                 self.prev_signal[coin.symbol] = signal
                 continue
 
@@ -69,8 +69,8 @@ class TAStrategy(AutoTrader):
                     self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, current_price: {current_price}, {signal_info}")
                     self.buy(coin, buy_amount)
                     self.logger.info(f"{current_date} >> current balances: {self.manager.get_balances(self.all_coins)}\n")
-                # else:
-                #     self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, 'Not Enought Money!!\n")
+                else:
+                    self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, 'Not Enought Money!!\n")
 
             elif signal == "sell" and target_coin_balance > min_qty:
                 self.logger.info(f"{current_date} >> {coin.symbol}, signal: {signal}, current_price: {current_price}, {signal_info}")
