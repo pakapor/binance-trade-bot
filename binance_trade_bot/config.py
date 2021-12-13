@@ -17,21 +17,19 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
 
     PRICE_TYPE_ORDERBOOK = "orderbook"
     PRICE_TYPE_TICKER = "ticker"
-    
-    RATIO_CALC_DEFAULT = "default"
-    RATIO_CALC_SCOUT_MARGIN = "scout_margin"
 
     def __init__(self):
         # Init config
         config = configparser.ConfigParser()
         config["DEFAULT"] = {
-            "bridge": "USDT",
+            "bridge": "USDT", 
+            "use_margin": "no",
             "scout_multiplier": "5",
+            "scout_margin": "0.8",
             "scout_sleep_time": "5",
             "hourToKeepScoutHistory": "1",
             "tld": "com",
             "trade_fee": "auto",
-            "strategy": "default",
             "enable_paper_trading": "false",
             "sell_timeout": "0",
             "buy_timeout": "0",
@@ -40,10 +38,7 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             "sell_max_price_change": "0.005",
             "buy_max_price_change": "0.005",
             "price_type": self.PRICE_TYPE_ORDERBOOK,
-            "ratio_calc": "default",
             "accept_losses": "false",
-            "max_idle_hours": "3",
-            "ratio_adjust_weight":"100",
             "auto_adjust_bnb_balance": "false",
             "auto_adjust_bnb_balance_rate": "3",
             "allow_coin_merge": "true"
@@ -69,10 +64,6 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         )
         self.SCOUT_SLEEP_TIME = int(
             os.environ.get("SCOUT_SLEEP_TIME") or config.get(USER_CFG_SECTION, "scout_sleep_time")
-        )
-
-        self.RATIO_ADJUST_WEIGHT = int(
-            os.environ.get("RATIO_ADJUST_WEIGHT") or config.get(USER_CFG_SECTION, "ratio_adjust_weight")
         )
 
         # Get config for binance
@@ -152,26 +143,12 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         if price_type not in price_types:
             raise Exception(f"{self.PRICE_TYPE_ORDERBOOK} or {self.PRICE_TYPE_TICKER} expected, got {price_type} for price_type")
         self.PRICE_TYPE = price_type
-
-        ratio_calcs = {
-            self.RATIO_CALC_DEFAULT,
-            self.RATIO_CALC_SCOUT_MARGIN
-        }
-
-        ratio_calc = os.environ.get("RATIO_CALC") or config.get(
-            USER_CFG_SECTION, "ratio_calc", fallback=self.RATIO_CALC_DEFAULT
-        )
-        if ratio_calc not in ratio_calcs:
-            raise Exception(
-                f"{self.RATIO_CALC_DEFAULT} or {self.RATIO_CALC_SCOUT_MARGIN} expected, got {ratio_calc}"
-                "for ratio_calc"
-            )
-        self.RATIO_CALC = ratio_calc
+        
+        
 
         accept_losses_str = os.environ.get("ACCEPT_LOSSES") or config.get(USER_CFG_SECTION, "accept_losses")
         self.ACCEPT_LOSSES = accept_losses_str == 'true' or accept_losses_str == 'True'
 
-        self.MAX_IDLE_HOURS = os.environ.get("MAX_IDLE_HOURS") or config.get(USER_CFG_SECTION, "max_idle_hours")
 
         auto_adjust_bnb_balance_str = os.environ.get("AUTO_ADJUST_BNB_BALANCE") or config.get(USER_CFG_SECTION, "auto_adjust_bnb_balance")
         self.AUTO_ADJUST_BNB_BALANCE = str(auto_adjust_bnb_balance_str).lower() == "true"
@@ -182,6 +159,7 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
 
         allow_coin_merge = os.environ.get("ALLOW_COIN_MERGE") or config.get(USER_CFG_SECTION, "allow_coin_merge")
         self.ALLOW_COIN_MERGE = str(allow_coin_merge).lower() == 'true'
+
 
         backtest_start_date = config.get(USER_CFG_SECTION, "BACKTEST_START_DATE").split('/')
         self.BACKTEST_START_DATE = datetime(int(backtest_start_date[0]), int(backtest_start_date[1]), int(backtest_start_date[2]), int(backtest_start_date[3]), int(backtest_start_date[4]))
@@ -196,3 +174,6 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
 
         backtest_yield_interval = os.environ.get("BACKTEST_YIELD_INTERVAL") or config.get(USER_CFG_SECTION, "backtest_yield_interval")
         self.BACKTEST_YIELD_INTERVAL = int(backtest_yield_interval)
+
+        self.USE_MARGIN = os.environ.get("USE_MARGIN") or config.get(USER_CFG_SECTION, "use_margin")
+        self.SCOUT_MARGIN = float(os.environ.get("SCOUT_MARGIN") or config.get(USER_CFG_SECTION, "scout_margin"))
